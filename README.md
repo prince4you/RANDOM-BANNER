@@ -45,7 +45,7 @@
 
 ### 🚀 single line
 ```bash
-
+curl -s https://raw.githubusercontent.com/prince4you/RANDOM-BANNER/main/RANDOM.sh | bash
 ```
 
 ### 🛠️ Manual
