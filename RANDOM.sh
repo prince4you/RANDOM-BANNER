@@ -22,7 +22,14 @@ if ! command -v nala &> /dev/null; then
 else
     echo -e "${GREEN}✓ Nala is already installed.${NC}"
 fi
-
+# Check for pv
+if ! command -v pv &> /dev/null; then
+    echo -e "${YELLOW}✗ pv not found! Installing now...${NC}"
+    nala update && nala install pv
+    echo -e "${GREEN}✓ pv installed successfully!${NC}"
+else
+    echo -e "${GREEN}✓ pv is already installed.${NC}"
+fi
 # Function to check if command exists
 command_exists() {
     command -v "$1" >/dev/null 2>&1
