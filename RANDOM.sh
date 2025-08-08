@@ -6,36 +6,52 @@ GREEN='\033[1;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[1;34m'
 CYAN='\033[1;36m'
-p'='MAGENTA='\033[1;35m'
+MAGENTA='\033[1;35m'
 WHITE='\033[1;37m'
 PURPLE='\033[1;38;5;129m'
-RANGE='\033[1;38;5;208m'
- PINK='\033[1;38;5;198m'
+ORANGE='\033[1;38;5;208m'
+PINK='\033[1;38;5;198m'
 RESET='\033[0m'
+NC='\033[0m'  # No Color
 BOLD='\033[1m'
 
-# Check for nala
-if ! command -v nala &> /dev/null; then
-    echo -e "${YELLOW}✗ Nala not found! Installing now...${NC}"
-    apt update -y && apt install nala
-    echo -e "${GREEN}✓ Nala installed successfully!${NC}"
-else
-    echo -e "${GREEN}✓ Nala is already installed.${NC}"
-fi
-# Check for pv
-if ! command -v pv &> /dev/null; then
-    echo -e "${YELLOW}✗ pv not found! Installing now...${NC}"
-    nala update && nala install pv
-    echo -e "${GREEN}✓ pv installed successfully!${NC}"
-else
-    echo -e "${GREEN}✓ pv is already installed.${NC}"
-fi
+# Create a dedicated directory for all files
+CONFIG_DIR="$HOME/.termux_custom"
+mkdir -p "$CONFIG_DIR" || {
+    echo -e "${RED}✗ Failed to create config directory!${NC}"
+    exit 1
+}
+
 # Function to check if command exists
 command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
-#screen clear
+# Function to handle errors
+handle_error() {
+    echo -e "${RED}✗ Error: $1${NC}"
+    echo -e "${YELLOW}Please report issues at https://termux.dev/issues${NC}"
+    exit 1
+}
+
+# Check for nala or apt
+if command_exists nala; then
+    PKG_MANAGER="nala"
+elif command_exists apt; then
+    PKG_MANAGER="apt"
+else
+    handle_error "No supported package manager found (nala/apt)"
+fi
+
+# Check for pv
+if ! command_exists pv; then
+    echo -e "${YELLOW}✗ pv not found! Installing now...${NC}"
+    $PKG_MANAGER update -y && $PKG_MANAGER install -y pv || {
+        echo -e "${RED}✗ Failed to install pv${NC}"
+    }
+fi
+
+# Clear screen
 clear
 
 # Welcome Banner
@@ -48,26 +64,26 @@ ${ORANGE}██╔══██╗██╔══██║██║╚██╗�
 ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═════╝  ╚═════╝ ╚═╝     ╚═╝
 ${RED}${BOLD}========>> Created by Sunil [ Prince4you ] <<========= 
 ${RESET}"
-echo -e "${CYAN}[+]configure your terminal with a custom banner!${RESET}"
+echo -e "${CYAN}[+] Configure your terminal with a custom banner!${RESET}"
 
 # User Input for Customization
-#echo -e "${GREEN} [ Customize Your Terminal ]${RESET}"
 read -p "$(echo -e "${YELLOW}Enter creator name [default: Sunil]: ${RESET}")" creator_name
 creator_name=${creator_name:-Sunil}
 read -p "$(echo -e "${YELLOW}Enter creator tagline [default: Prince4You]: ${RESET}")" creator_tag
 creator_tag=${creator_tag:-Prince4You}
 read -p "$(echo -e "${YELLOW}Enter welcome message [default: Welcome to Your Terminal]: ${RESET}")" welcome_msg
 welcome_msg=${welcome_msg:-Welcome to Your Terminal}
+
 # Default speed
 default_speed=50
 
 # Function to validate speed
 validate_speed() {
     if ! [[ "$1" =~ ^[0-9]+$ ]]; then
-        echo -e "${RED}✘ Invalid input! Please enter numbers only.${RESET}"
+        echo -e "${RED}✘ Invalid input! Please enter numbers only.${NC}"
         return 1
     elif [[ "$1" -lt 1 || "$1" -gt 200 ]]; then
-        echo -e "${RED}✘ Speed must be between 1 and 200.${RESET}"
+        echo -e "${RED}✘ Speed must be between 1 and 200.${NC}"
         return 1
     fi
     return 0
@@ -84,70 +100,70 @@ done
 pv_speed=$speed
 
 # Preview the speed
-echo -e "${CYAN}Previewing animation speed at ${pv_speed} bytes/sec...${RESET}"
+echo -e "${CYAN}Previewing animation speed at ${pv_speed} bytes/sec...${NC}"
 echo "      Loading animation test..." | pv -qL "$pv_speed"
 sleep 1
 
 # Confirm and finalize
-echo -e "${GREEN}✓ Customization saved! Animation speed set to ${pv_speed} bytes/sec.${RESET}"
+echo -e "${GREEN}✓ Customization saved! Animation speed set to ${pv_speed} bytes/sec.${NC}"
 
 # Update and upgrade packages
-echo -e "${GREEN}[1/6]${RESET} ${YELLOW}Updating and upgrading packages...${RESET}"
-if nala update && nala upgrade; then
-    echo -e "${GREEN}✓ Package update complete!${RESET}\n"
+echo -e "${GREEN}[1/6]${NC} ${YELLOW}Updating and upgrading packages...${NC}"
+if $PKG_MANAGER update -y && $PKG_MANAGER upgrade -y; then
+    echo -e "${GREEN}✓ Package update complete!${NC}\n"
 else
-    echo -e "${RED}✗ Package update failed. Continuing anyway...${RESET}\n"
+    echo -e "${RED}✗ Package update failed. Continuing anyway...${NC}\n"
 fi
 sleep 1
 
 # Install required packages
-echo -e "${GREEN}[2/6]${RESET} ${YELLOW}Installing required packages...${RESET}"
-if pkg install -y toilet starship fish python neofetch pv wget git nala; then
-    echo -e "${GREEN}✓ Packages installed successfully!${RESET}\n"
+echo -e "${GREEN}[2/6]${NC} ${YELLOW}Installing required packages...${NC}"
+if $PKG_MANAGER install -y toilet starship fish python neofetch pv wget git; then
+    echo -e "${GREEN}✓ Packages installed successfully!${NC}\n"
 else
-    echo -e "${RED}✗ Package installation failed. Some features might not work.${RESET}\n"
+    echo -e "${RED}✗ Package installation failed. Some features might not work.${NC}\n"
 fi
 sleep 1
 
 # Install lolcat
-echo -e "${GREEN}[3/6]${RESET} ${YELLOW}Installing lolcat...${RESET}"
+echo -e "${GREEN}[3/6]${NC} ${YELLOW}Installing lolcat...${NC}"
 if ! command_exists pip; then
-    if ! pkg install -y python-pip; then
-        echo -e "${RED}✗ Failed to install python-pip. lolcat won't be installed.${RESET}\n"
+    if ! $PKG_MANAGER install -y python-pip; then
+        echo -e "${RED}✗ Failed to install python-pip. lolcat won't be installed.${NC}\n"
     fi
 fi
 
 if command_exists pip; then
     if pip install lolcat; then
-        echo -e "${GREEN}✓ lolcat installed successfully!${RESET}\n"
+        echo -e "${GREEN}✓ lolcat installed successfully!${NC}\n"
     else
-        echo -e "${RED}✗ Failed to install lolcat.${RESET}\n"
+        echo -e "${RED}✗ Failed to install lolcat.${NC}\n"
     fi
 fi
 sleep 1
 
 # Change shell to fish
-echo -e "${GREEN}[4/6]${RESET} ${YELLOW}Changing default shell to fish...${RESET}"
+echo -e "${GREEN}[4/6]${NC} ${YELLOW}Changing default shell to fish...${NC}"
 if command_exists chsh; then
     if chsh -s fish; then
-        echo -e "${GREEN}✓ Default shell changed to fish!${RESET}"
+        echo -e "${GREEN}✓ Default shell changed to fish!${NC}"
     else
-        echo -e "${RED}✗ Failed to change shell to fish.${RESET}"
+        echo -e "${RED}✗ Failed to change shell to fish.${NC}"
     fi
 else
-    echo -e "${RED}✗ chsh command not found. Shell not changed.${RESET}"
+    echo -e "${RED}✗ chsh command not found. Shell not changed.${NC}"
 fi
 echo ""
 sleep 1
 
 # Create fish config directory
-mkdir -p ~/.config/fish || echo -e "${RED}✗ Failed to create fish config directory.${RESET}"
+mkdir -p ~/.config/fish || echo -e "${RED}✗ Failed to create fish config directory.${NC}"
 
 # Social Media Setup
-echo -e "${GREEN}[5/6]${RESET} ${YELLOW}Social Media Setup${RESET}"
-echo -e "${CYAN}Enter your social media links (leave blank to skip):${RESET}\n"
+echo -e "${GREEN}[5/6]${NC} ${YELLOW}Social Media Setup${NC}"
+echo -e "${CYAN}Enter your social media links (leave blank to skip):${NC}\n"
 
-SOCIAL_FILE="$HOME/social_media.txt"
+SOCIAL_FILE="$CONFIG_DIR/social_media.txt"
 > "$SOCIAL_FILE"  # Clear old content
 
 platforms=(
@@ -156,18 +172,18 @@ platforms=(
 )
 
 for platform in "${platforms[@]}"; do
-    read -p "$(echo -e "${YELLOW}$platform: ${RESET}")" url
+    read -p "$(echo -e "${YELLOW}$platform: ${NC}")" url
     if [ -n "$url" ]; then
         echo "$platform:$url" >> "$SOCIAL_FILE"
     fi
 done
-echo -e "${GREEN}✓ Social media details saved to $SOCIAL_FILE${RESET}\n"
+echo -e "${GREEN}✓ Social media details saved to $SOCIAL_FILE${NC}\n"
 sleep 1
 
 # Create the banner script
-echo -e "${GREEN}[6/6]${RESET} ${YELLOW}Creating terminal banner...${RESET}"
+echo -e "${GREEN}[6/6]${NC} ${YELLOW}Creating terminal banner...${NC}"
 
-cat > ~/termux_banner.sh << EOF
+cat > "$CONFIG_DIR/termux_banner.sh" << EOF
 #!/bin/bash
 
 # Function to generate random colors
@@ -236,10 +252,10 @@ random_distro=\${distros[\$RANDOM % \${#distros[@]}]}
 
 # Read social media details
 declare -A social_media
-if [ -f ~/social_media.txt ]; then
+if [ -f "$SOCIAL_FILE" ]; then
     while IFS=':' read -r platform link; do
         social_media["\$platform"]="\$link"
-    done < ~/social_media.txt
+    done < "$SOCIAL_FILE"
 fi
 
 # Clear screen and show loading animation
@@ -274,10 +290,10 @@ echo -e "\n\$(random_color)Created By $creator_name [$creator_tag]\$RESET" | pv 
 echo -e "\n\$(random_color)All systems loaded. Ready to rock! \$RESET" | pv -qL $pv_speed
 EOF
 
-chmod +x ~/termux_banner.sh || echo -e "${RED}✗ Failed to make termux_banner.sh executable.${RESET}"
+chmod +x "$CONFIG_DIR/termux_banner.sh" || handle_error "Failed to make termux_banner.sh executable"
 
 # Create social media customization script
-cat > ~/setup_social.sh << EOF
+cat > "$CONFIG_DIR/setup_social.sh" << EOF
 #!/bin/bash
 
 # Colors
@@ -291,10 +307,10 @@ echo -e "\${YELLOW}Press Enter to keep current value\${RESET}\n"
 
 # Read current values
 declare -A current_values
-if [ -f ~/social_media.txt ]; then
+if [ -f "$SOCIAL_FILE" ]; then
     while IFS=':' read -r platform link; do
         current_values["\$platform"]="\$link"
-    done < ~/social_media.txt
+    done < "$SOCIAL_FILE"
 fi
 
 # Get user input
@@ -311,41 +327,45 @@ for platform in "\${platforms[@]}"; do
 done
 
 # Save to file
-> ~/social_media.txt
+> "$SOCIAL_FILE"
 for platform in "\${!current_values[@]}"; do
-    echo "\$platform:\${current_values[\$platform]}" >> ~/social_media.txt
+    echo "\$platform:\${current_values[\$platform]}" >> "$SOCIAL_FILE"
 done
 
 echo -e "\n\${GREEN}✓ Social media updated successfully!\${RESET}"
 sleep 1
 EOF
 
-chmod +x ~/setup_social.sh || echo -e "${RED}✗ Failed to make setup_social.sh executable.${RESET}"
+chmod +x "$CONFIG_DIR/setup_social.sh" || handle_error "Failed to make setup_social.sh executable"
 
 # Configure fish greeting
-echo 'function fish_greeting; bash ~/termux_banner.sh; end' > ~/.config/fish/config.fish || echo -e "${RED}✗ Failed to configure fish greeting.${RESET}"
+mkdir -p ~/.config/fish || handle_error "Failed to create fish config directory"
+echo "function fish_greeting; bash '$CONFIG_DIR/termux_banner.sh'; end" > ~/.config/fish/config.fish || handle_error "Failed to configure fish greeting"
 
 # Download and setup starship config
-echo -e "\n${YELLOW}Downloading custom Starship configuration...${RESET}"
-mkdir -p ~/.config || echo -e "${RED}✗ Failed to create .config directory.${RESET}"
+echo -e "\n${YELLOW}Downloading custom Starship configuration...${NC}"
+mkdir -p ~/.config || handle_error "Failed to create .config directory"
 if command_exists wget; then
     if wget https://raw.githubusercontent.com/prince4you/Term-Banner/main/starship.toml -O ~/.config/starship.toml; then
-        echo -e "${GREEN}✓ Starship config downloaded!${RESET}"
+        echo -e "${GREEN}✓ Starship config downloaded!${NC}"
     else
-        echo -e "${RED}✗ Failed to download Starship config.${RESET}"
+        echo -e "${RED}✗ Failed to download Starship config.${NC}"
     fi
 else
-    echo -e "${RED}✗ wget not found. Starship config not downloaded.${RESET}"
+    echo -e "${RED}✗ wget not found. Starship config not downloaded.${NC}"
 fi
 
 # Initialize starship
 if command_exists starship; then
-    echo 'starship init fish | source' >> ~/.config/fish/config.fish || echo -e "${RED}✗ Failed to add starship to fish config.${RESET}"
+    echo 'starship init fish | source' >> ~/.config/fish/config.fish || echo -e "${RED}✗ Failed to add starship to fish config.${NC}"
 else
-    echo -e "${RED}✗ starship not found. Not added to fish config.${RESET}"
+    echo -e "${RED}✗ starship not found. Not added to fish config.${NC}"
 fi
 
 # Final message
-echo -e "\n${GREEN}Installation complete!${RESET}"
-echo -e "${CYAN}Please restart your terminal to see all changes.${RESET}"
-echo -e "${BLUE}Enjoy your customized terminal experience!${RESET}"
+echo -e "\n${GREEN}Installation complete!${NC}"
+echo -e "${CYAN}All files have been saved to: $CONFIG_DIR${NC}"
+echo -e "${BLUE}To restart your terminal, type:${NC}"
+echo -e "${MAGENTA}exec fish${NC}"
+echo -e "${BLUE}Or simply close and reopen your terminal.${NC}"
+echo -e "${GREEN}Enjoy your customized terminal experience!${NC}"
